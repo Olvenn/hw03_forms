@@ -19,7 +19,7 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = Post.objects.filter(group=group)
+    posts = group.group_posts.select_related('group')
     page_obj = create_page_object(request, posts, POSTS_PER_STR)
 
     context = {
@@ -31,7 +31,7 @@ def group_posts(request, slug):
 
 def profile(request, username):
     user = get_object_or_404(User, username=username)
-    posts = Post.objects.filter(author__exact=user)
+    posts = user.posts.select_related('author')
     posts_count = Post.objects.filter(author__exact=user).count
     page_obj = create_page_object(request, posts, POSTS_PER_STR)
 
@@ -83,4 +83,3 @@ def post_edit(request, post_id):
         form.save()
         return redirect('posts:post_detail', post.pk)
     return render(request, "posts/create_post.html", context)
-
