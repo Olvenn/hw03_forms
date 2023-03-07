@@ -58,16 +58,13 @@ def post_detail(request, post_id):
 def post_create(request):
     form = PostForm(request.POST or None)
     context = {
-        'title': 'Добавить запись',
-        'submit_btn': 'Сохранить',
         'form': form,
     }
-    if request.method == "POST":
-        if form.is_valid():
-            form.instance.author = request.user
-            form.save()
-            return redirect('posts:profile', request.user)
-        return render(request, "posts/create_post.html", context)
+
+    if form.is_valid():
+        form.instance.author = request.user
+        form.save()
+        return redirect('posts:profile', request.user)
     return render(request, "posts/create_post.html", context)
 
 
@@ -78,15 +75,12 @@ def post_edit(request, post_id):
         return redirect('posts:post_detail', post.id)
     form = PostForm(request.POST or None)
     context = {
-        'title': 'Редактировать пост',
-        'submit_btn': 'Добавить',
         'is_edit': True,
         'form': form,
     }
-    if request.method == "POST":
-        if form.is_valid():
-            form.instance.author = request.user
-            form.save()
-            return redirect('posts:post_detail', post.pk)
-        return render(request, "posts/create_post.html", context)
+    if form.is_valid():
+        form.instance.author = request.user
+        form.save()
+        return redirect('posts:post_detail', post.pk)
     return render(request, "posts/create_post.html", context)
+

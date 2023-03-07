@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}
-  {{ title }}
+  {% if form.instance.id %}
+    Редактировать пост 
+  {% else %}
+    Добавить запись
+  {% endif %}
 {% endblock %}
 {% block content %}
 {% load user_filters %}
@@ -53,7 +57,11 @@
               {% endfor %}
               <div class="d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary">
-                  {{ submit_btn }}
+                  {% if form.instance.id %}
+                    Добавить 
+                  {% else %}
+                    Сохранить
+                  {% endif %}
                 </button>
               </div>
             </form>
