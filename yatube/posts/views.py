@@ -1,17 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 
-from django.core.paginator import Paginator
 from .models import Post, Group, User
 from .forms import PostForm
 from yatube.constants import POSTS_PER_STR
+from .utils import create_page_object
 
 
 def index(request):
     post_list = Post.objects.all()
-    paginator = Paginator(post_list, POSTS_PER_STR)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = create_page_object(request, post_list, POSTS_PER_STR)
+
     context = {
         'page_obj': page_obj,
     }
@@ -21,9 +20,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts = Post.objects.filter(group=group)
-    paginator = Paginator(posts, POSTS_PER_STR)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = create_page_object(request, posts, POSTS_PER_STR)
 
     context = {
         'group': group,
@@ -36,9 +33,8 @@ def profile(request, username):
     user = get_object_or_404(User, username=username)
     posts = Post.objects.filter(author__exact=user)
     posts_count = Post.objects.filter(author__exact=user).count
-    paginator = Paginator(posts, POSTS_PER_STR)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = create_page_object(request, posts, POSTS_PER_STR)
+
     context = {
         "username": username,
         "author": user,
