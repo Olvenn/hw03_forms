@@ -21,8 +21,10 @@ class PostModelTest(TestCase):
             text='Тестовый пост',
         )
 
-    def test_verbose_name(self):
-        """verbose_name в полях совпадает с ожидаемым."""
+    def test_str_(self):
+        """правильно ли отображается
+        значение поля __str__ в объектах моделей"""
+
         test_items = {
             PostModelTest.group: PostModelTest.group.title,
             PostModelTest.post: PostModelTest.post.text[:15],
