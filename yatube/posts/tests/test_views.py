@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 from django.urls import reverse
 from django import forms
+import random
 
 
 from ..models import Group, Post
@@ -9,7 +10,8 @@ from ..models import Group, Post
 User = get_user_model()
 
 
-class PostViewTests(TestCase):
+class PostMainViewTests(TestCase):
+    """Тесты проверки где достаточно проверить один пост."""
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -21,7 +23,7 @@ class PostViewTests(TestCase):
         cls.group = Group.objects.create(
             title='Тестовая группа',
             description='Тестовое описание',
-            slug='test-slug',
+            slug='group-slug',
         )
 
         cls.author = User.objects.create_user(
@@ -32,9 +34,9 @@ class PostViewTests(TestCase):
         )
 
         cls.post = Post.objects.create(
-            author=cls.author,
-            group=cls.group,
+            group=PostMainViewTests.group,
             text='Тестовый пост',
+            author=cls.author,
         )
 
     def setUp(self):
@@ -114,3 +116,89 @@ class PostViewTests(TestCase):
         self.assertEqual(response.context.get('post').group.title,
                          'Тестовая группа')
         self.assertEqual(response.context.get('post').text, 'Тестовый пост')
+
+
+PAGES_COUNT_1 = 14
+
+
+class PostViewTests(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.guest_client = Client()
+        cls.user = User.objects.create_user(username='TestUser')
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+
+        cls.group = Group.objects.create(
+            title='Тестовая группа 1',
+            description='Тестовое описание 1',
+            slug='group-slug',
+        )
+
+        cls.group_2 = Group.objects.create(
+            title="Тестовая группа 2",
+            description="Тестовое описание 2",
+            slug="group_slug_2",
+        )
+
+        cls.author = User.objects.create_user(
+            first_name='Лев',
+            last_name='Толстой',
+            username='FirstAuthor',
+            email='lev@yatube.ru'
+        )
+
+        cls.author_2 = User.objects.create_user(
+            first_name='Mark',
+            last_name='Tven',
+            username='SecondAuthor',
+            email='mark@yatube.ru'
+        )
+
+        for i in range(1, PAGES_COUNT_1):
+            cls.post = Post.objects.create(
+                group=PostMainViewTests.group,
+                text=f'Тестовый пост 1-{i + 1}',
+                author=cls.author,
+            )
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.user = User.objects.create_user(username='HasNoName')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_group_page_show_correct_context(self):
+        """Пост отображается на странице группы"""
+
+        response = self.authorized_client.get(
+            reverse('posts:group', args=['group-slug']))
+        num = random.randint(1, PAGES_COUNT_1 - 2)
+        print(num)
+        first_object = response.context['page_obj'][num]
+        post_group_0 = first_object.group.title
+        self.assertEqual(post_group_0, 'Тестовая группа 1')
+
+
+class paginatorViewsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='Test User')
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+        for count in range(15):
+            cls.post = Post.objects.create(
+                text=f'Тестовый пост номер {count}',
+                author=cls.user)
+
+    def test_first_page_contains_ten_records(self):
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(len(response.context.get('page_obj').object_list), 10)
+
+    def test_second_page_contains_three_records(self):
+        response = self.authorized_client.get(
+            reverse('posts:index') + '?page=2')
+        self.assertEqual(len(response.context.get('page_obj').object_list), 5)
