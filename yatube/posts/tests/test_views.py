@@ -6,6 +6,8 @@ import random
 
 
 from ..models import Group, Post
+from yatube.constants import POSTS_PER_STR
+
 
 User = get_user_model()
 
@@ -44,6 +46,12 @@ class PostMainViewTests(TestCase):
         self.user = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.author_client = Client()
+        self.author_client.force_login(PostMainViewTests.author)
+        self.form_fields = {
+            'text': forms.fields.CharField,
+            'group': forms.fields.ChoiceField,
+            }
 
     def test_page_has_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -71,19 +79,19 @@ class PostMainViewTests(TestCase):
     #     response = self.authorized_client.get(reverse('posts:index'))
     #     self.assertTemplateUsed(response, 'posts/index.html')
 
-    def test_create_post_page_show_correct_context(self):
-        """Форма добавления поста сформирована с правильным контекстом"""
+    # def test_create_post_page_show_correct_context(self):
+    #     """Форма добавления поста сформирована с правильным контекстом"""
 
-        response = self.authorized_client.get(reverse('posts:post_create'))
-        form_fields = {
-            'group': forms.fields.ChoiceField,
-            'text': forms.fields.CharField,
-        }
+    #     response = self.authorized_client.get(reverse('posts:post_create'))
+    #     form_fields = {
+    #         'group': forms.fields.ChoiceField,
+    #         'text': forms.fields.CharField,
+    #     }
 
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_fields = response.context['form'].fields[value]
-                self.assertIsInstance(form_fields, expected)
+    #     for value, expected in form_fields.items():
+    #         with self.subTest(value=value):
+    #             form_fields = response.context['form'].fields[value]
+    #             self.assertIsInstance(form_fields, expected)
 
     def test_home_page_show_correct_context(self):
         """Пост отображается на главной странице"""
@@ -116,9 +124,24 @@ class PostMainViewTests(TestCase):
         self.assertEqual(response.context.get('post').group.title,
                          'Тестовая группа')
         self.assertEqual(response.context.get('post').text, 'Тестовый пост')
+        
+    def test_create_post__page_show_correct_context(self):
+        """Шаблон create_post сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse("posts:post_create"))
 
-
-PAGES_COUNT_1 = 14
+        # Проверяем, что типы полей формы в context соответствуют ожиданиям
+        for value, expected in self.form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context.get("form").fields.get(value)
+                self.assertIsInstance(form_field, expected)
+                
+    def test_post_edit_page_correct_context(self):
+        response = self.author_client.get(reverse('posts:post_edit',
+                                          args=[PostMainViewTests.post.id]))
+        for value, expected in self.form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context['form'].fields[value]
+                self.assertIsInstance(form_field, expected)   
 
 
 class PostViewTests(TestCase):
@@ -126,6 +149,7 @@ class PostViewTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        PAGES_COUNT_1 = 14
         cls.guest_client = Client()
         cls.user = User.objects.create_user(username='TestUser')
         cls.authorized_client = Client()
@@ -156,14 +180,14 @@ class PostViewTests(TestCase):
             username='SecondAuthor',
             email='mark@yatube.ru'
         )
-
+        
         for i in range(1, PAGES_COUNT_1):
             cls.post = Post.objects.create(
                 group=PostMainViewTests.group,
                 text=f'Тестовый пост 1-{i + 1}',
                 author=cls.author,
             )
-
+            
     def setUp(self):
         self.guest_client = Client()
         self.user = User.objects.create_user(username='HasNoName')
@@ -175,11 +199,19 @@ class PostViewTests(TestCase):
 
         response = self.authorized_client.get(
             reverse('posts:group', args=['group-slug']))
-        num = random.randint(1, PAGES_COUNT_1 - 2)
-        print(num)
-        first_object = response.context['page_obj'][num]
+        num = random.randint(1, POSTS_PER_STR - 1)
+        first_object = response.context['page_obj'][num] 
         post_group_0 = first_object.group.title
         self.assertEqual(post_group_0, 'Тестовая группа 1')
+
+    def test_context_in_profile(self):
+        """Проверка содержимого словаря context для /<username>/"""
+        response = (self.authorized_client.
+                    get(reverse('posts:profile', args=[self.author.username])))
+        num = random.randint(1, POSTS_PER_STR - 1)
+        first_object = response.context['page_obj'][num]
+        post_author_0 = first_object.author.username
+        self.assertEqual(post_author_0, 'FirstAuthor')
 
 
 class paginatorViewsTest(TestCase):
