@@ -180,14 +180,14 @@ class PostViewTests(TestCase):
             username='SecondAuthor',
             email='mark@yatube.ru'
         )
-        
+
         for i in range(1, PAGES_COUNT_1):
             cls.post = Post.objects.create(
                 group=PostMainViewTests.group,
                 text=f'Тестовый пост 1-{i + 1}',
                 author=cls.author,
             )
-            
+
     def setUp(self):
         self.guest_client = Client()
         self.user = User.objects.create_user(username='HasNoName')
