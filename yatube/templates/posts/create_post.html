@@ -32,7 +32,7 @@
             {% endif %}
  0         <div class="card-body">
             <form method="post" action="{% if form.instance.id %}
-              {% url 'posts:post_edit' post_id %}
+              {% url 'posts:post_edit' post.pk %}
               {% else %}
               {% url 'posts:post_create' %} 
               {% endif %}">
@@ -57,7 +57,7 @@
               {% endfor %}
               <div class="d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary">
-                  {% if form.instance.id %}
+                  {% if is_edit %}
                     Добавить 
                   {% else %}
                     Сохранить
